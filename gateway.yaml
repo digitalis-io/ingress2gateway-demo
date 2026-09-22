@@ -1,0 +1,53 @@
+# Envoy service as NodePort so kind can map it to the host
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: nodeport-proxy
+  namespace: envoy-gateway-system
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: NodePort
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: eg
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+  parametersRef:
+    group: gateway.envoyproxy.io
+    kind: EnvoyProxy
+    name: nodeport-proxy
+    namespace: envoy-gateway-system
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: data-gateway
+  namespace: data
+spec:
+  gatewayClassName: eg
+  listeners:
+    - name: cassandra-0
+      protocol: TCP
+      port: 9042
+      allowedRoutes:
+        kinds:
+          - kind: TCPRoute
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: TCPRoute
+metadata:
+  name: cassandra-0
+  namespace: data
+spec:
+  parentRefs:
+    - name: data-gateway
+      sectionName: cassandra-0
+  rules:
+    - backendRefs:
+        - name: cassandra
+          port: 9042
