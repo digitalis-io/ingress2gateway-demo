@@ -57,9 +57,11 @@ Tear it down with `./teardown.sh`.
 
 ## Why Cassandra and not Kafka
 
-Cassandra drivers do not send SNI, so a plain CQL connection needs `TCPRoute`, one listener port per node, and no certificates. That makes it the shortest path to a working demo: three manifests and no operator.
+An unencrypted CQL connection has no TLS handshake, so there is no SNI for the Gateway to match on and the only option is `TCPRoute` with one listener port per node. No certificates, no operator, three manifests: the shortest path to a working demo.
 
-Kafka is the opposite case. Clients do send SNI, so many brokers share one port through `TLSRoute` hostname matching, but you need TLS certificates, a Strimzi install and correct `advertised.listeners` before anything works. The blog post covers that side; this repo covers the one you can run in five minutes.
+Encrypted Cassandra is a different story. The TLS handshake does carry a server name, which is how k8ssandra exposes CQL through Traefik on port 9142 with several clusters behind one port and token aware routing intact. It needs a driver that sets a per node SNI name.
+
+Kafka sits at the far end of the same scale. Clients always send SNI, so many brokers share one port through `TLSRoute` hostname matching, but you need certificates, a Strimzi install and correct `advertised.listeners` before anything works. The blog post covers that side; this repo covers the one you can run in five minutes.
 
 ## Usage examples
 
